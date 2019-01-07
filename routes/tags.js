@@ -5,18 +5,17 @@ const knex = require('../knex');
 
 const router = express.Router();
 
-router.get('/', (req,res,next)=>{
+router.get('/',(req, res, next)=>{
   const { searchTerm } = req.query;
 
-  knex
-    .select('folders.id', 'name')
-    .from('folders')
+  knex('tags')
+    .select('tags.id', 'name')
     .modify(function (queryBuilder){
       if (searchTerm){
         queryBuilder.where('name', 'like', `%${searchTerm}%`);
       }
     })
-    .orderBy('folders.id')
+    .orderBy('tags.id')
     .then(results =>{
       console.log(JSON.stringify(results, null, 2));
     })
@@ -26,26 +25,19 @@ router.get('/', (req,res,next)=>{
 router.get('/:id', (req, res, next)=>{
   const id = req.params.id;
 
-  knex
-    .select('folder.id', 'name')
-    .from('folder')
-    .where('folder.id', id)
+  knex('tags')
+    .select('tags.id', 'name')
+    .where('tags.id', id)
     .orderBy('id')
     .then(results => console.log(results[0]))
     .catch(err => console.log(err));
 });
 
-router.put('/:id', (req, res, next)=>{
+router.put('/:id',(req, res, next)=>{
   const idUp = req.params.id;
 
   const updateObj = {};
   const updateableFields = ['name'];
-
-  //   updateableFields.forEach(field =>{
-  //     if(field in req.body){
-  //       updateObj[field] = req.body[field];
-  //     }
-  //   });
 
   if('name' in req.body){
     updateObj['name'] = req.body['name'];
@@ -57,43 +49,43 @@ router.put('/:id', (req, res, next)=>{
     return next(err);
   }
 
-  knex('folders')
+  knex('tags')
     .where({id: idUp})
     .update(updateObj, ['name'])
     .then(results => console.log(results))
     .catch(err => console.log(err));
 });
 
-
 router.post('/', (req, res, next)=>{
   const { name } = req.body;
 
-  const newItem = { name };
-
-  if(!newItem.name){
-    const err = new Error('Missing `name` of folder');
+  if(!name){
+    const err = new Error('Missing `name` in request body');
     err.status = 400;
     return next(err);
   }
 
-  knex('folders')
+  const newItem = { name };
+
+  knex('tags')
     .insert(newItem)
     .returning(['id', 'name'])
-    .then((results) => {
+    .then((results)=>{
       const result = results[0];
-      res.json(result);
+      res.json(result);        
     })
     .catch(err => next(err));
 });
 
-
 router.delete('/:id', (req, res, next)=>{
   const id = req.params.id;
 
-  knex('notes')
-    .where('notes.id', id)
+  knex('tags')
+    .where('tags.id', id)
     .del()
     .then(results => console.log(res.status(204)))
     .catch(err => console.log(err));
 });
+
+
 module.exports = router;
